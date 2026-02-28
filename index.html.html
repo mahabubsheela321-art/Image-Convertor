@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image File Converter</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+
+  <style>
+    body {
+      padding-top: 2rem;
+      padding-bottom: 4rem;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .upload-area {
+      margin-top: 2rem;
+      padding: 3rem;
+      border: 2px dashed #ccc;
+      border-radius: 16px;
+      text-align: center;
+      transition: 0.3s;
+      background: #f9fafb;
+      cursor: pointer;
+    }
+
+    .upload-area.dragover {
+      border-color: #1095c1;
+      background: #eef9ff;
+    }
+
+    .preview {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    .preview img {
+      max-width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+    }
+
+    section {
+      margin-top: 4rem;
+    }
+
+    footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+
+<nav class="container-fluid">
+  <ul>
+    <li><strong>PhotoConverter</strong></li>
+  </ul>
+  <ul>
+    <li><a href="#home">Home</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#convert" role="button">Convert</a></li>
+  </ul>
+</nav>
+
+<main class="container">
+
+  <section id="home">
+    <hgroup>
+      <h2>Convert Your Images Instantly</h2>
+      <h3>Drag, paste, or upload a photo and change its format</h3>
+    </hgroup>
+
+    <p>
+      Convert images between JPG, PNG, and WEBP directly in your browser.
+      No uploads. No tracking. Everything stays on your device.
+    </p>
+  </section>
+
+  <section id="convert">
+
+    <div class="upload-area" id="uploadArea">
+      <p><strong>Drag & Drop Image Here</strong></p>
+      <p>or click to upload, or press Ctrl + V to paste</p>
+      <input type="file" id="fileInput" accept="image/*" hidden />
+    </div>
+
+    <div class="preview" id="preview"></div>
+
+    <div style="margin-top:2rem;">
+      <label for="formatSelect">Choose Output Format</label>
+      <select id="formatSelect">
+        <option value="image/jpeg">JPG</option>
+        <option value="image/png">PNG</option>
+        <option value="image/webp">WEBP</option>
+      </select>
+
+      <button onclick="convertImage()">Convert & Download</button>
+    </div>
+
+  </section>
+
+  <section id="how">
+    <h3>How It Works</h3>
+    <p>
+      Your image is loaded into a hidden canvas inside your browser.
+      It is then re-exported in your chosen format and downloaded instantly.
+    </p>
+
+    <h3>Privacy First</h3>
+    <p>
+      Your files never leave your device. Everything happens locally.
+    </p>
+  </section>
+
+  <section id="privacy">
+    <h3>Privacy Policy</h3>
+    <p>No data is collected. No files are stored or uploaded.</p>
+  </section>
+
+  <section id="terms">
+    <h3>Terms of Service</h3>
+    <p>This tool is provided as-is without warranty.</p>
+  </section>
+
+</main>
+
+<footer class="container">
+  <small>
+    <a href="#privacy">Privacy Policy</a> • <a href="#terms">Terms of Service</a>
+  </small>
+</footer>
+
+<script>
+let currentImage = null;
+
+const uploadArea = document.getElementById("uploadArea");
+const fileInput = document.getElementById("fileInput");
+const preview = document.getElementById("preview");
+
+// Click to upload
+uploadArea.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", (e) => {
+  handleFile(e.target.files[0]);
+});
+
+// Drag & Drop
+uploadArea.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  uploadArea.classList.add("dragover");
+});
+
+uploadArea.addEventListener("dragleave", () => {
+  uploadArea.classList.remove("dragover");
+});
+
+uploadArea.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  handleFile(file);
+});
+
+// Paste from clipboard
+window.addEventListener("paste", (e) => {
+  const items = e.clipboardData.items;
+  for (let item of items) {
+    if (item.type.indexOf("image") !== -1) {
+      const file = item.getAsFile();
+      handleFile(file);
+    }
+  }
+});
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    alert("Please upload an image file.");
+    return;
+  }
+
+  currentImage = file;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function convertImage() {
+  if (!currentImage) {
+    alert("Please upload, drag, or paste an image first.");
+    return;
+  }
+
+  const format = document.getElementById("formatSelect").value;
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      canvas.toBlob(function(blob) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "converted-image." + format.split("/")[1];
+        link.click();
+      }, format);
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(currentImage);
+}
+</script>
+
+</body>
+</html>
